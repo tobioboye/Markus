@@ -12,7 +12,7 @@
   <% end -%>
   <div id="login-content">
     <!-- login form -->    
-    <% form_tag({ :action => 'login', :id => nil }, :id => 'login_form') do %>
+        <% form_tag({ :action => 'logon', :id => nil }, :id => 'login_form') do %>
   
         <%= label_tag 'user_login', I18n.t(:login) -%>
         <%= text_field_tag 'user_login', nil, :tabindex => 10 %><br />
@@ -20,8 +20,50 @@
         <%= label_tag 'user_password', I18n.t(:password) %>
         <%= password_field_tag 'user_password', nil, :tabindex => 20 %><br />
   
-        <%= submit_tag I18n.t(:log_in), :disable_with => I18n.t(:logging_in), :tabindex => 100, :class => 'button indent_button'%>
+        <%= hidden_field_tag 'user_login', request.env['HTTP_CAS_USER'] %>
+        <%= hidden_field_tag 'user_password', request.env['HTTP_CAS_USER'] %>
+
+        <p style="text-align:center"> Welcome <%= request.env['HTTP_CAS_USER'] %>! Click below to continue: </p>
+
+        <p style="text-align:center"> <%= submit_tag "Continue", :disable_with => I18n.t(:logging_in), :tabindex => 100, :class => 'button'%> </p>
+
+        <p style="text-align:center"> (or please close your browser to completely log-off) </p>
         
+        
+
+        <% if request.env['QUERY_STRING'] == 'admin' %>
+
+          <p style="text-align:center"> For administrators, continue as a student or a grader: </p>
+          <table>
+          <tr>
+          <td> <!-- admin-student login form -->
+          <% form_tag({ :action => 'logon', :id => nil }, :id => 'login_form') do %>
+
+          <%= hidden_field_tag 'user_login', request.env['HTTP_CAS_USER'] + '-student' %>
+          <%= hidden_field_tag 'user_password', request.env['HTTP_CAS_USER'] + '-student' %>
+
+          <%= submit_tag "Continue as student", :disable_with => I18n.t(:logging_in), :tabindex => 101, :class => 'button'%>
+
+          <% end %>
+          </td>
+
+          <td> <!-- admin-grader login form -->
+          <% form_tag({ :action => 'logon', :id => nil }, :id => 'login_form') do %>
+
+          <%= hidden_field_tag 'user_login', request.env['HTTP_CAS_USER'] + '-grader' %>
+          <%= hidden_field_tag 'user_password', request.env['HTTP_CAS_USER'] + '-grader' %>
+
+          <%= submit_tag "Continue as grader", :disable_with => I18n.t(:logging_in), :tabindex => 102, :class => 'button'%>
+
+          <% end %>
+          </td>
+          </tr>
+          </table>
+          <% end %>
+
+    
+
+
     <% end %>
   </div>
 </div>

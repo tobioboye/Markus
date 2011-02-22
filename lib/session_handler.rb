@@ -112,7 +112,7 @@ module SessionHandler
       # Expire session if remote user does not match the session's uid
       current_user = User.find_by_id(session[:uid])
       if !current_user.nil?
-        return true if ( current_user.user_name != @markus_auth_remote_user )
+        return true if ( current_user.user_name.split('-').first != @markus_auth_remote_user )
       end
     end
     return session[:timeout] < Time.now

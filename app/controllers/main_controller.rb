@@ -20,20 +20,24 @@ class MainController < ApplicationController
 
   def login
     # external auth has been done, skip markus authorization
+    debugger
     if MarkusConfigurator.markus_config_remote_user_auth
+      debugger
       if @markus_auth_remote_user.nil?
         render :file => "#{RAILS_ROOT}/public/403.html",
           :status => 403
         return
       else
+        debugger
         login_success = login_without_authentication(@markus_auth_remote_user)
+        debugger
         if login_success
           uri = session[:redirect_uri]
           session[:redirect_uri] = nil
           refresh_timeout
           current_user.set_api_key # set api key in DB for user if not yet set
-          # redirect to last visited page or to main page
-          redirect_to( uri || { :action => 'index' } )
+          # redirect to login page (admin can log in as student or grader)
+          render :login
           return
         else
           @login_error = flash[:login_notice]
@@ -108,6 +112,9 @@ class MainController < ApplicationController
     end
   end
 
+  def logon 
+    render :login
+  end
   # Clear the sesssion for current user and redirect to login page
   def logout
     logout_redirect = MarkusConfigurator.markus_config_logout_redirect
