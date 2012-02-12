@@ -169,7 +169,8 @@
     inputs.each(function(input) {
       input.value = input.readAttribute('data-original-value');
       input.removeAttribute('data-original-value');
-      input.disabled = false;
+      input.disabled = true;
+      input.value = "Logging in...";
     });
   });
 
