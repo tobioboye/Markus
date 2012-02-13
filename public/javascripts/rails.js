@@ -164,13 +164,12 @@
     }
   });
 
-  document.on("ajax:after", "form", function(event, element) {
+  document.on("ajax:before", "form", function(event, element) {
     var inputs = element.select("input[type=submit][disabled=true][data-disable-with]");
     inputs.each(function(input) {
-      input.value = input.readAttribute('data-original-value');
+      input.value = input.readAttribute('data-disable-with');
       input.removeAttribute('data-original-value');
       input.disabled = true;
-      input.value = "Logging in...";
     });
   });
 
