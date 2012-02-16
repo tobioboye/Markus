@@ -4,6 +4,7 @@
 <%= javascript_include_tag "manage_graders.js" %>
 <%= javascript_include_tag "FilterTable/FilterTable.js" %>
 <%= javascript_include_tag "Graders/tabs_boot.js" %>
+<%= javascript_include_tag "prototype.js" %>
 
 <%= render :partial => "boot.js.erb" %>
 <script type="text/javascript">
@@ -129,9 +130,15 @@ document.observe("dom:loaded", function(){
 </div><!-- Notice -->
 
 <%= form_tag url_for(global_actions_assignment_graders_path(@assignment)),
+<<<<<<< HEAD
 	         :id => "global_action_form", 
              :remote => true do %>
              
+=======
+             :id => "global_action_form",
+             :remote => true do %>
+
+>>>>>>> d33d1f1f0c9b0e877e19902691d096ef0e665172
 <script type='text/javascript'>
 $("global_action_form").observe('ajax:after', function(evt, status, data, xhr) {
   thinking();
