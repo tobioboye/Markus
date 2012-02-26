@@ -10,5 +10,5 @@ function custom_ajax_before(event){
 }
 
 function custom_ajax_after(event, element){
-  //Do nothing 
+  //Do nothing
 }
