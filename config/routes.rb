@@ -5,7 +5,7 @@ Markus::Application.routes.draw do
   filter :locale
 
   # Install the default routes as the lowest priority.
-  root :controller => "main", :action => "login"
+  root :to => 'main#login'
    # API routes
   namespace :api do
     resources :test_results
@@ -263,6 +263,7 @@ Markus::Application.routes.draw do
 
   resources :main do
     collection do
+      post 'login'
       get 'logout'
       get 'about'
       post 'login_as'

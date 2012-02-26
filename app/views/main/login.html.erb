@@ -1,3 +1,4 @@
+<%= javascript_include_tag 'application.js' %>
 <div id="login">
   <div id="login-greeting"><%= I18n.t(:welcome_to) %></div>
 
@@ -12,7 +13,7 @@
   <% end -%>
   <div id="login-content">
     <!-- login form -->
-    <%= form_tag({ :action => 'login', :id => nil }, :id => 'login_form') do %>
+    <%= form_tag(login_main_index_path(), {:method => :post, :remote => true, :id => 'login_form'}) do %>
 
         <%= label_tag 'user_login', I18n.t(:login) -%>
         <%= text_field_tag 'user_login', nil, :tabindex => 10 %><br />
@@ -28,7 +29,6 @@
 
 <%# Try to put focus on the login text field on load %>
 <script type="text/javascript">
-//<![CDATA[
   try{ document.getElementById('user_login').focus(); } catch(e) {}
-//]]>
+  $('login_form').observe('ajax:before', function(evt) {custom_ajax_before(evt)});
 </script>

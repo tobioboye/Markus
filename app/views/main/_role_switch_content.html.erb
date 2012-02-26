@@ -1,5 +1,5 @@
 <div id="role_switch_text">
-  <% form_tag login_as_main_index_path(), {:method => 'post', :remote => true} do %>
+  <% form_tag login_as_main_index_path(), {:method => 'post', :remote => true, :id => 'role_sw'} do %>
     <div id="role_switch_error"><span>&nbsp;</span></div>
     <h2>
       <%= I18n.t(:switch_role)%>
@@ -20,6 +20,10 @@
   <% end %>
   <script>
     $('effective_user_login').focus();
+    //$('role_sw').observe('ajax:before', function() {custom_ajax_before(document.getElementById('role_sw'));});
+    $('role_sw').observe('ajax:before', function(evt) {custom_ajax_before(evt);});
+    //$('role_sw').getElementsByClassName("button")[0].stopObserving('ajax:after', function(evt, status, data, xhr) {custom_ajax_after();});
+    $('role_sw').observe('ajax:after', function(evt, elem) {custom_ajax_after(evt, elem);});
     role_switch_modal.open();
   </script>
 </div>
