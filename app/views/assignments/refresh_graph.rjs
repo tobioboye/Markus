@@ -1,0 +1,1 @@
+page.replace_html 'assignment_distribution_graph', :partial => 'main/grade_distribution_graph', :locals => {:assignment => @assignment}

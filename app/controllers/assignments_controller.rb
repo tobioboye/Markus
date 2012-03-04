@@ -450,9 +450,12 @@ class AssignmentsController < ApplicationController
 
   # Refreshes the grade distribution graphs and reloads the page
   def refresh_graph
-    assignment = Assignment.find(params[:id])
-    assignment.assignment_stat.refresh_grade_distribution
-    redirect_to :controller => 'main'
+    @assignment = Assignment.find(params[:id])
+    @assignment.assignment_stat.refresh_grade_distribution
+    respond_to do |format|
+      format.html { redirect_to :controller => 'main'}
+      format.js
+    end
   end
 
   private
