@@ -448,7 +448,7 @@ class AssignmentsController < ApplicationController
     @assignments = Assignment.all
   end
 
-  # Refreshes the grade distribution graphs and reloads the page
+  # Refreshes the grade distribution graphs and reloads the assignment graph using ajax
   def refresh_graph
     @assignment = Assignment.find(params[:id])
     @assignment.assignment_stat.refresh_grade_distribution

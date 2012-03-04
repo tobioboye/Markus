@@ -13,7 +13,7 @@ class AssignmentStat < ActiveRecord::Base
   # Used by Bluff to draw the graphs
   def grade_distribution_array
     if !self.grade_distribution_percentage.nil?
-      return self.grade_distribution_percentage.parse_csv.map{ |x| x.to_i }
+      return self.grade_distribution_percentage.parse_csv.map{ |x| x.to_i }.to_json
     else
       # Default, empty distribution
       return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
