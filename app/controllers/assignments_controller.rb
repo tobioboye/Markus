@@ -453,7 +453,6 @@ class AssignmentsController < ApplicationController
     @assignment = Assignment.find(params[:id])
     @assignment.assignment_stat.refresh_grade_distribution
     respond_to do |format|
-      format.html { redirect_to :controller => 'main'}
       format.js
     end
   end
