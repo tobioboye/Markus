@@ -555,6 +555,16 @@ class ResultsControllerTest < AuthenticatedControllerTest
             assert assign_to :marks_map
             assert_response :success
             assert render_template :view_marks
+            assert_routing( { :path => "en/assignments/" + @assignment.id.to_s + "/submissions/1/results/1/view_marks", 
+                              :method => :get},
+                            { :action => "view_marks", 
+                              :controller => "results", 
+                              :assignment_id => @assignment.id.to_s,
+                              :submission_id => "1",
+                              :id => "1", 
+                              :locale => "en" 
+                            }
+                          )
           end
         end
 

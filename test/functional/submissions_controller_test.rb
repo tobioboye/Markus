@@ -402,7 +402,26 @@ class SubmissionsControllerTest < AuthenticatedControllerTest
               :assignment_identifier => 'a1')
           assert_response :redirect
         end
-
+        
+        #new
+        should "instructor releases submissions successfully" do
+          Assignment.stubs(:find).returns(@assignment)
+          @assignment.expects(:short_identifier).once.returns('a1')
+          @assignment.submission_rule.expects(:can_collect_now?).once.returns(false)
+          @assignment.groupings.expects(:all).returns([@grouping])
+          #Add the code for students to submit their assignments
+          # Debug: Might need to add grouping as it is nil
+          post_as @admin,
+                  :update_submissions,
+                  :assignment_id => 1,
+                  :id => 1,
+                  :ap_select_full => 'true',
+                  :filter => 'none',
+                  :release_results => 'true'
+          #assert_input :errors, []
+          assert_response :success
+        end
+        #new end
       end
 
       should "instructor tries to release submissions" do
