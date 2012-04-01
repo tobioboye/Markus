@@ -17,6 +17,7 @@ class SubmissionsControllerTest < AuthenticatedControllerTest
       @assignment = Assignment.make(:allow_web_submits => true, :group_min => 1)
       @grouping = Grouping.make(:group => @group, :assignment => @assignment)
       @membership = StudentMembership.make(:membership_status => 'inviter', :grouping => @grouping)
+      @submission = Submission.make(:grouping => @grouping)
       @student = @membership.user
     end
 
@@ -409,15 +410,39 @@ class SubmissionsControllerTest < AuthenticatedControllerTest
           @assignment.expects(:short_identifier).once.returns('a1')
           @assignment.submission_rule.expects(:can_collect_now?).once.returns(false)
           @assignment.groupings.expects(:all).returns([@grouping])
-          #Add the code for students to submit their assignments
-          # Debug: Might need to add grouping as it is nil
+
+          # Create a TA
+          @ta_membership = TaMembership.make(:membership_status => :accepted, :grouping => @grouping)
+          @grader = @ta_membership.user
+          
+          # Create the Grade entry for the current student
+          @grade_entry_form = GradeEntryForm.make
+          @grade_entry_form_with_grade_entry_items = make_grade_entry_form_with_multiple_grade_entry_items
+          @grade_entry_student = @grade_entry_form_with_grade_entry_items.grade_entry_students.make(:user => @student)
+          @grade_entry_form_with_grade_entry_items.grade_entry_items.each do |grade_entry_item|
+            @grade_entry_student.grades.make(:grade_entry_item => grade_entry_item, :grade => 5)
+          end
+
+          # Assign the students to a TA for marking
+          post_as @admin,
+                  :controller => 'graders',
+                  :action => 'add_grader_to_grouping',
+                  :assignment_id => @assignment.id, 
+                  :grouping_id => @grouping.id,
+                  :grader_id => @grader.id
+          assert_response :success
+
+          # TAs need to mark the assignments and set the state to be completed 
+
+          # how do TAs grade assignments and how do they mark them as completed?? 
           post_as @admin,
                   :update_submissions,
                   :assignment_id => 1,
                   :id => 1,
                   :ap_select_full => 'true',
                   :filter => 'none',
-                  :release_results => 'true'
+                  :release_results => 'true',
+                  :groupings => [@grouping.id.to_s] #why is grouping still null?
           #assert_input :errors, []
           assert_response :success
         end

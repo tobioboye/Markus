@@ -460,6 +460,7 @@ class SubmissionsController < ApplicationController
     assignment = Assignment.find(params[:assignment_id])
     errors = []
     groupings = []
+    debugger
     if params[:ap_select_full] == 'true'
       # We should have been passed a filter
       if params[:filter].blank?
@@ -472,6 +473,7 @@ class SubmissionsController < ApplicationController
       if params[:groupings].nil?
         errors.push(I18n.t('results.must_select_a_group'))
       else
+        debugger # find out what groupings should contain
         groupings = assignment.groupings.find(params[:groupings])
       end
     end
