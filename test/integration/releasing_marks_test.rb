@@ -1,5 +1,3 @@
-# require 'test_helper'
-#    require File.join(File.dirname(__FILE__), 'authenticated_controller_test')
 require File.join(File.dirname(__FILE__), '..', 'test_helper')
 require File.join(File.dirname(__FILE__), '..', 'blueprints', 'blueprints')
 require File.join(File.dirname(__FILE__), '..', 'blueprints', 'helper')
@@ -11,46 +9,70 @@ class ReleasingMarksTest < ActionDispatch::IntegrationTest
     setup do
       # Create an instructor and TA
       @admin = Admin.make
-      @ta_membership = TaMembership.make(:membership_status => :accepted, :grouping => @grouping)
-      @grader = @ta_membership.user
-      
+
       # Create an assignment
       @assignment = Assignment.make(:allow_web_submits => true, :group_min => 1)
-
-      # Create a student with a grouping for that student, and create a submission for that grouping
+      
+      # Create a student with a grouping for that student and a submission with a result for that grouping
       @group = Group.make
-      @grouping = Grouping.make(:group => @group, :assignment => @assignment)
+      @grouping = Grouping.make(:group => @group, :assignment => @assignment)      
       @membership = StudentMembership.make(:membership_status => 'inviter', :grouping => @grouping)
       @student = @membership.user
       @submission = Submission.make(:grouping => @grouping)
+      @result = Result.make(:submission => @submission)
 
-      Assignment.stubs(:find).returns(@assignment)
-      @assignment.expects(:short_identifier).once.returns('a1')
-      @assignment.submission_rule.expects(:can_collect_now?).once.returns(false)
-      @assignment.groupings.expects(:all).returns([@grouping])
+      # Create a TA and assign the TA to be the grader of the TA
+      @ta_membership = TaMembership.make(:membership_status => :accepted)
+      @grader = @ta_membership.user
     end
 
     should "Assign student grouping to a grader" do
-      # Assign the student to the TA
-      debugger
+      # Set up session variables for each user
+      session_vars_admin = { 'uid' => @admin.id, 'timeout' => 3.days.from_now }
+      session_vars_ta = {'uid' => @grader.id, 'timeout' => 3.days.from_now }
+      session_vars_student = {'uid' => @student.id, 'timeout' => 3.days.from_now }
       get_via_redirect add_grader_to_grouping_assignment_graders_path(:assignment_id => @assignment.id, 
-                                                                      :grader_id => @grader.id, 
-                                                                      :grouping_id => @grouping.id)
-      
-      assert_response :success       
-    end                       
-    # # Create the Grade entry for the current student and assign a grade to the student
-    #   @grade_entry_form = GradeEntryForm.make
-    #   @grade_entry_form_with_grade_entry_items = make_grade_entry_form_with_multiple_grade_entry_items
-    #   @grade_entry_student = @grade_entry_form_with_grade_entry_items.grade_entry_students.make(:user => @student)
-    #   @grade_entry_form_with_grade_entry_items.grade_entry_items.each do |grade_entry_item|
-    #     @grade_entry_student.grades.make(:grade_entry_item => grade_entry_item, :grade => 5)
-    #   end
-  end
+                                                                      :grader_id => @grader.id,
+                                                                      :grouping_id => @grouping.id),
+                                                                      session_vars_admin
+      assert_response :success
 
-  # Replace this with your real tests.
-  test "the truth" do
-    assert true
-  end
+      # Admin collects the assignment
+      get_via_redirect collect_all_submissions_assignment_submissions_path(:assignment_id => @assignment.id, 
+                                                                           :grouping_id => @grouping.id),
+                                                                           session_vars_admin
+      assert_response :success
 
+      # TA grade the assignments and mark them as completed assign a grade to them by assigning an extra mark
+
+      get_via_redirect add_extra_mark_assignment_submission_result_path(:assignment_id => @assignment.id,
+                                                                        :submission_id => @submission.id,
+                                                                        :id => @result.id, 
+                                                                        :extra_mark => 10),
+                                                                        session_vars_ta
+      assert_response :success
+
+      # TA marks the assignment as completed
+      @result.marking_state = Result::MARKING_STATES[:complete]
+      post_via_redirect update_marking_state_assignment_submission_result_path(:assignment_id => @assignment.id,
+                                                                               :submission_id => @submission.id,
+                                                                               :id => @result.id),
+                                                                               session_vars_ta
+      assert_response :success
+
+      # Admin releases the assignment
+      get_via_redirect set_released_to_students_assignment_submission_result_path(:assignment_id => @assignment.id,
+                                                                                  :submission_id => @submission.id,
+                                                                                  :id => @result.id,
+                                                                                  :value => true),
+                                                                                  session_vars_admin
+      assert_response :success
+
+      # Student views her marks
+      get_via_redirect view_marks_assignment_submission_result_path(:assignment_id => @assignment.id,
+                                                                    :submission_id => @submission.id,
+                                                                    :id => @result.id)
+      assert_response :success
+    end
+  end
 end
