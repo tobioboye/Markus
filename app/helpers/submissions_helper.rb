@@ -10,7 +10,6 @@ module SubmissionsHelper
 
   def set_release_on_results(groupings, release, errors)
     changed = 0
-    debugger
     groupings.each do |grouping|
       begin
         raise I18n.t("marking_state.no_submission", :group_name => grouping.group_name) if !grouping.has_submission?
