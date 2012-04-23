@@ -12,10 +12,10 @@ class ReleasingMarksTest < ActionDispatch::IntegrationTest
 
       # Create an assignment
       @assignment = Assignment.make(:allow_web_submits => true, :group_min => 1)
-      
+
       # Create a student with a grouping for that student and a submission with a result for that grouping
       @group = Group.make
-      @grouping = Grouping.make(:group => @group, :assignment => @assignment)      
+      @grouping = Grouping.make(:group => @group, :assignment => @assignment)
       @membership = StudentMembership.make(:membership_status => 'inviter', :grouping => @grouping)
       @student = @membership.user
       @submission = Submission.make(:grouping => @grouping)
@@ -31,14 +31,14 @@ class ReleasingMarksTest < ActionDispatch::IntegrationTest
       session_vars_admin = { 'uid' => @admin.id, 'timeout' => 3.days.from_now }
       session_vars_ta = {'uid' => @grader.id, 'timeout' => 3.days.from_now }
       session_vars_student = {'uid' => @student.id, 'timeout' => 3.days.from_now }
-      get_via_redirect add_grader_to_grouping_assignment_graders_path(:assignment_id => @assignment.id, 
+      get_via_redirect add_grader_to_grouping_assignment_graders_path(:assignment_id => @assignment.id,
                                                                       :grader_id => @grader.id,
                                                                       :grouping_id => @grouping.id),
                                                                       session_vars_admin
       assert_response :success
 
       # Admin collects the assignment
-      get_via_redirect collect_all_submissions_assignment_submissions_path(:assignment_id => @assignment.id, 
+      get_via_redirect collect_all_submissions_assignment_submissions_path(:assignment_id => @assignment.id,
                                                                            :grouping_id => @grouping.id),
                                                                            session_vars_admin
       assert_response :success
@@ -47,7 +47,7 @@ class ReleasingMarksTest < ActionDispatch::IntegrationTest
 
       get_via_redirect add_extra_mark_assignment_submission_result_path(:assignment_id => @assignment.id,
                                                                         :submission_id => @submission.id,
-                                                                        :id => @result.id, 
+                                                                        :id => @result.id,
                                                                         :extra_mark => 10),
                                                                         session_vars_ta
       assert_response :success
