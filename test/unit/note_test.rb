@@ -1,8 +1,8 @@
 # test using MACHINIST
 
-require File.join(File.dirname(__FILE__), '..', 'test_helper')
-require File.join(File.dirname(__FILE__), '..', 'blueprints', 'blueprints')
-require File.join(File.dirname(__FILE__), '..', 'blueprints', 'helper')
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'test_helper'))
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'blueprints', 'blueprints'))
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'blueprints', 'helper'))
 require 'shoulda'
 
 class NoteTest < ActiveSupport::TestCase
@@ -12,12 +12,9 @@ class NoteTest < ActiveSupport::TestCase
   should belong_to :noteable
   should belong_to :user
 
-  context "noteables_exist?"  do
-    setup do
-      clear_fixtures
-    end
+  context 'noteables_exist?'  do
 
-    should "return false when no noteables exist" do
+    should 'return false when no noteables exist' do
       assert !Note.noteables_exist?
     end
 
@@ -26,7 +23,7 @@ class NoteTest < ActiveSupport::TestCase
         setup do
           @noteable = noteable.call()
         end
-        should  "return true" do
+        should  'return true' do
           assert Note.noteables_exist?
         end
       end

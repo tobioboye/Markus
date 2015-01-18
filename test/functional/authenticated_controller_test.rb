@@ -1,8 +1,15 @@
-require File.join(File.dirname(__FILE__), '..', 'test_helper')
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'test_helper'))
 
 # Test class to extend when creating tests for this application;
 # overrides common request types with authentication
 class AuthenticatedControllerTest < ActionController::TestCase
+
+  def user_params(attrs = {})
+    args = { user_name:  'test',
+             first_name: 'Mark',
+             last_name:  'Us' }.merge(attrs)
+    ActionController::Parameters.new(user: args)
+  end
 
   # Performs GET request as the supplied user for authentication
   def get_as(user, action, params=nil, flash=nil)

@@ -1,5 +1,11 @@
+# encoding: utf-8
 # Settings specified here will take precedence over those in config/environment.rb
 Markus::Application.configure do
+  # rails will fallback to en, no matter what is set as config.i18n.default_locale
+  # rails will fallback to config.i18n.default_locale translation
+  config.i18n.fallbacks = true
+  config.i18n.fallbacks = [:en]
+
   # The production environment is meant for finished, "live" apps.
   # Code is not reloaded between requests
   config.cache_classes = true
@@ -14,10 +20,16 @@ Markus::Application.configure do
   config.log_level = :info
   # set log-level (:debug, :info, :warn, :error, :fatal)
 
+  # Compress both stylesheets and JavaScripts
+  config.assets.js_compressor  = :uglifier
+  config.assets.css_compressor = :scss
+
   # Full error reports are disabled and caching is turned on
   config.consider_all_requests_local = true
   # set to false to turn off traces
-  config.action_view.debug_rjs                         = true
+
+  # FIXME: The following lines can be commented
+  # out when jQuery is fully implemented
   config.action_controller.perform_caching             = true
   config.cache_classes                                 = true
 
@@ -30,19 +42,19 @@ Markus::Application.configure do
   # Defaults to:
   config.action_mailer.delivery_method = :sendmail
   #config.action_mailer.sendmail_settings = {
-  #  :location => '/usr/sbin/sendmail',
-  #  :arguments => '-i -t'  }
+  #  location: '/usr/sbin/sendmail',
+  #  arguments: '-i -t'  }
 
   # or using smtp configuration
   #config.action_mailer.delivery_method = :smtp
   #config.action_mailer.smtp_settings = {
-  #  :address              => "smtp.gmail.com",
-  #  :port                 => 587,
-  #  :domain               => 'gmail.com',
-  #  :user_name            => '<username>',
-  #  :password             => '<password>',
-  #  :authentication       => 'plain',
-  #  :enable_starttls_auto => true  }
+  #  address: "smtp.gmail.com",
+  #  port: 587,
+  #  domain: 'gmail.com',
+  #  user_name: '<username>',
+  #  password: '<password>',
+  #  authentication: 'plain',
+  #  enable_starttls_auto: true  }
 
   # Use a different cache store in production
   # config.cache_store = :mem_cache_store # place where to put cached files is configured in config/environment.rb
@@ -142,8 +154,6 @@ Markus::Application.configure do
   ###################################################################
   # Set this to true or false if you want to be able to display and annotate
   # PDF documents within the browser.
-  # When collecting pdfs files, it converts them to jpg format via RGhost.
-  # RGhost is ghostscript dependent. Be sure ghostscript is installed.
   PDF_SUPPORT = false
 
   ###################################################################
@@ -211,6 +221,8 @@ Markus::Application.configure do
   ###################################################################
   # Logging Options
   ###################################################################
+  # If set to true then the MarkusLogger will be enabled
+  MARKUS_LOGGING_ENABLED = true
   # If set to true then the rotation of the logfiles will be defined
   # by MARKUS_LOGGING_ROTATE_INTERVAL instead of the size of the file
   MARKUS_LOGGING_ROTATE_BY_INTERVAL = false

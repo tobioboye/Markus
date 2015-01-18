@@ -31,7 +31,7 @@ module Repository
       @revision_history = []                      # a list (array) of old revisions (i.e. < @current_revision)
       # mapping (hash) of timestamps and revisions
       @timestamps_revisions = {}
-      @timestamps_revisions[Time.now._dump.to_s] = @current_revision   # push first timestamp-revision mapping
+      @timestamps_revisions[Marshal.dump(Time.now)] = @current_revision   # push first timestamp-revision mapping
       @repository_location = location
       @opened = true
 
@@ -52,7 +52,7 @@ module Repository
       end
       return false
     end
-    
+
     # Open repository at specified location
     def self.open(location)
       if !self.repository_exists?(location)
@@ -75,7 +75,7 @@ module Repository
     end
 
     # Destroys all repositories
-    def self.purge_all()
+    def self.purge_all
       @@repositories = {}
     end
 
@@ -153,18 +153,18 @@ module Repository
       # everything went fine, so push old revision to history revisions,
       # make new_rev the latest one and create a mapping for timestamped
       # revisions
-      timestamp = Time.now._dump.to_s
-      new_rev.timestamp = try_parse_time(timestamp, 0) # this throws ArgumentErrors occasionally
+      timestamp = Time.now
+      new_rev.timestamp = timestamp
       @revision_history.push(@current_revision)
       @current_revision = new_rev
       @current_revision.__increment_revision_number() # increment revision number
-      @timestamps_revisions[timestamp] = @current_revision
+      @timestamps_revisions[Marshal.dump(timestamp)] = @current_revision
       @@repositories[@repository_location] = self
       return true
     end
 
     # Returns the latest revision number (as a RepositoryRevision object)
-    def get_latest_revision()
+    def get_latest_revision
       return @current_revision
     end
 
@@ -309,29 +309,15 @@ module Repository
         raise FileExistsConflict # raise conflict if path exists
       end
       dir = RevisionDirectory.new(rev.revision_number, {
-        :name => File.basename(full_path),
-        :path => File.dirname(full_path),
-        :last_modified_revision => rev.revision_number,
-        :last_modified_date => Time.now,
-        :changed => true,
-        :user_id => rev.user_id
+        name: File.basename(full_path),
+        path: File.dirname(full_path),
+        last_modified_revision: rev.revision_number,
+        last_modified_date: Time.now,
+        changed: true,
+        user_id: rev.user_id
       })
       rev.__add_directory(dir)
       return rev
-    end
-
-    # Helper method to deal with "Argument out of range" errors
-    def try_parse_time(timedump, counter)
-      begin
-        return Time.parse(timedump)
-      rescue ArgumentError
-        if counter < 3
-          sleep(1)
-          return try_parse_time(timedump, counter+1)
-        else
-          return Time.now
-        end
-      end
     end
 
     # Adds a file into the provided revision
@@ -341,12 +327,12 @@ module Repository
       end
       # file does not exist, so add it
       file = RevisionFile.new(rev.revision_number, {
-        :name => File.basename(full_path),
-        :path => File.dirname(full_path),
-        :last_modified_revision => rev.revision_number,
-        :changed => true,
-        :user_id => rev.user_id,
-        :last_modified_date => Time.now
+        name: File.basename(full_path),
+        path: File.dirname(full_path),
+        last_modified_revision: rev.revision_number,
+        changed: true,
+        user_id: rev.user_id,
+        last_modified_date: Time.now
       })
       rev.__add_file(file, content)
       return rev
@@ -396,22 +382,22 @@ module Repository
       original.files.each do |object|
         if object.instance_of?(RevisionFile)
           new_object = RevisionFile.new(object.from_revision, {
-            :name => object.name,
-            :path => object.path,
-            :last_modified_revision => object.last_modified_revision,
-            :changed => false, # for copies, set this to false
-            :user_id => object.user_id,
-            :last_modified_date => object.last_modified_date
+            name: object.name,
+            path: object.path,
+            last_modified_revision: object.last_modified_revision,
+            changed: false, # for copies, set this to false
+            user_id: object.user_id,
+            last_modified_date: object.last_modified_date
           })
           new_revision.files_content[new_object.to_s] = original.files_content[object.to_s]
         else
           new_object = RevisionDirectory.new(object.from_revision, {
-            :name => object.name,
-            :path => object.path,
-            :last_modified_revision => object.last_modified_revision,
-            :last_modified_date => object.last_modified_date,
-            :changed => false, # for copies, set this to false
-            :user_id => object.user_id
+            name: object.name,
+            path: object.path,
+            last_modified_revision: object.last_modified_revision,
+            last_modified_date: object.last_modified_date,
+            changed: false, # for copies, set this to false
+            user_id: object.user_id
           })
         end
         new_revision.files.push(new_object)
@@ -443,8 +429,8 @@ module Repository
       all_timestamps_list = []
       remaining_timestamps_list = []
       @timestamps_revisions.keys().each do |time_dump|
-        all_timestamps_list.push(Time._load(time_dump))
-        remaining_timestamps_list.push(Time._load(time_dump))
+        all_timestamps_list.push(Marshal.load(time_dump))
+        remaining_timestamps_list.push(Marshal.load(time_dump))
       end
 
       # find closest matching timestamp
@@ -456,30 +442,30 @@ module Repository
         remaining_timestamps_list.shift()
         old_diff = wanted_timestamp - best_match
         mapping[old_diff.to_s] = best_match
-        if path.nil? || (!path.nil? && @timestamps_revisions[best_match._dump].revision_at_path(path))
+        if path.nil? || (!path.nil? && @timestamps_revisions[Marshal.dump(best_match)].revision_at_path(path))
           first_timestamp_found = true
           break
         end
       end
 
-      # find all other valid revision 
+      # find all other valid revision
       remaining_timestamps_list.each do |curr_timestamp|
         new_diff = wanted_timestamp - curr_timestamp
         mapping[new_diff.to_s] = curr_timestamp
-        if path.nil? || (!path.nil? && @timestamps_revisions[curr_timestamp._dump].revision_at_path(path))
+        if path.nil? || (!path.nil? && @timestamps_revisions[Marshal.dump(curr_timestamp)].revision_at_path(path))
           if(old_diff <= 0 && new_diff <= 0) ||
             (old_diff <= 0 && new_diff > 0) ||
             (new_diff <= 0 && old_diff > 0)
             old_diff = [old_diff, new_diff].max
           else
-            old_diff = [old_diff, new_diff].min 
+            old_diff = [old_diff, new_diff].min
           end
         end
       end
 
       if first_timestamp_found
         wanted_timestamp = mapping[old_diff.to_s]
-        return @timestamps_revisions[wanted_timestamp._dump]
+        return @timestamps_revisions[Marshal.dump(wanted_timestamp)]
       else
         return @current_revision
       end
@@ -568,7 +554,7 @@ module Repository
 
     # Not (!) part of the AbstractRepository API:
     # A simple helper method to be used to increment the revision number
-    def __increment_revision_number()
+    def __increment_revision_number
       @revision_number += 1
     end
 
@@ -581,9 +567,11 @@ module Repository
       @files.each do |object|
         alt_path = ""
         if object.path != '/'
-          alt_path = object.path + '/'
+          alt_path = '/' + object.path
         end
-        if object.instance_of?(type) && (object.path == path || alt_path == path)
+        git_path = object.path + '/'
+        if object.instance_of?(type) && (object.path == path ||
+            alt_path == path || git_path == path)
           if (!only_changed)
             object.from_revision = @revision_number # set revision number
             result[object.name] = object
@@ -598,7 +586,7 @@ module Repository
       return result
     end
 
-    # Find if the revision contains files at the path 
+    # Find if the revision contains files at the path
     def revision_at_path_helper(path)
       # Automatically append a root slash if not supplied
       @files.each do |object|

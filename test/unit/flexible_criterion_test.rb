@@ -1,5 +1,5 @@
-require File.join(File.dirname(__FILE__), '..', 'test_helper')
-require File.join(File.dirname(__FILE__), '..', 'blueprints', 'helper')
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'test_helper'))
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'blueprints', 'helper'))
 require 'shoulda'
 
 class FlexibleCriterionTest < ActiveSupport::TestCase
@@ -9,7 +9,7 @@ class FlexibleCriterionTest < ActiveSupport::TestCase
   UPLOAD_CSV_STRING = "criterion4,10.0,\"description4, \"\"with quotes\"\"\"\n"
   INVALID_CSV_STRING = "criterion3\n"
 
-  context "A good FlexiableCriterion model" do
+  context 'A good FlexiableCriterion model' do
     setup do
       FlexibleCriterion.make
     end
@@ -30,7 +30,7 @@ class FlexibleCriterionTest < ActiveSupport::TestCase
 
     should validate_numericality_of(
                           :max).with_message(
-                                "must be a number greater than 0.0")
+                                'must be a number greater than 0.0')
 
     should allow_value(0.1).for(:max)
     should allow_value(1.0).for(:max)
@@ -40,50 +40,56 @@ class FlexibleCriterionTest < ActiveSupport::TestCase
     should_not allow_value(-100.0).for(:max)
   end
 
-  context "With an unexisting criteria" do
+  context 'With an unexisting criteria' do
 
-    should "raise en error message on an empty row" do
-      e = assert_raise CSV::IllegalFormatError do
+    should 'raise en error message on an empty row' do
+      e = assert_raise CSV::MalformedCSVError do
         FlexibleCriterion.new_from_csv_row([], Assignment.new)
       end
       assert_equal I18n.t('criteria_csv_error.incomplete_row'), e.message
     end
 
-    should "raise an error message on a 1 element row" do
-      e = assert_raise CSV::IllegalFormatError do
-        FlexibleCriterion.new_from_csv_row(['name'], Assignment.new)
+    should 'raise an error message on a 1 element row' do
+      e = assert_raise CSV::MalformedCSVError do
+        FlexibleCriterion.new_from_csv_row(%w(name), Assignment.new)
       end
       assert_equal I18n.t('criteria_csv_error.incomplete_row'), e.message
     end
 
-    should "raise an error message on a invalid maximum value" do
-      e = assert_raise CSV::IllegalFormatError do
-        FlexibleCriterion.new_from_csv_row(['name', 'max_value'], Assignment.new)
+    should 'raise an error message on a invalid maximum value' do
+      e = assert_raise CSV::MalformedCSVError do
+        FlexibleCriterion.new_from_csv_row(%w(name max_value), Assignment.new)
       end
       assert_equal I18n.t('criteria_csv_error.max_zero'), e.message
     end
 
-    should "raise the errors hash in case of an unpredicted error" do
-      e = assert_raise CSV::IllegalFormatError do
+    should 'raise exceptions in case of an unpredicted error' do
+      # Capture exception in variable 'e'
+      e = assert_raise CSV::MalformedCSVError do
         # That should fail because the assignment doesn't yet exists (in the DB)
         FlexibleCriterion.new_from_csv_row(['name', 10], Assignment.new)
       end
-      assert_instance_of ActiveModel::Errors, e.message
+      assert_instance_of CSV::MalformedCSVError, e
+      if RUBY_VERSION > '1.9'
+        assert_not_nil(e.message =~ /ActiveModel::Errors/)
+      else
+        assert_instance_of ActiveModel::Errors, e.message
+      end
     end
 
   end
 
-  context "An assignment, of type flexible criteria" do
+  context 'An assignment, of type flexible criteria' do
     setup do
       @assignment = Assignment.make(:marking_scheme_type => 'flexible')
     end
 
-    should "get an empty CSV string" do
+    should 'get an empty CSV string' do
       csv_string = FlexibleCriterion.create_csv(@assignment)
-      assert_equal "", csv_string, "the CSV string was not the one expected!"
+      assert_equal '', csv_string, 'the CSV string was not the one expected!'
     end
 
-    should "be able to parse a valid CSV file" do
+    should 'be able to parse a valid CSV file' do
       tempfile = Tempfile.new('flexible_criteria_csv')
       tempfile << UPLOAD_CSV_STRING
       tempfile.rewind
@@ -97,7 +103,7 @@ class FlexibleCriterionTest < ActiveSupport::TestCase
     end
 
 
-    should "create a new instance from a 2 element row" do
+    should 'create a new instance from a 2 element row' do
       criterion = FlexibleCriterion.new_from_csv_row(['name', 10.0],
                                                      @assignment)
       assert_not_nil criterion
@@ -105,7 +111,7 @@ class FlexibleCriterionTest < ActiveSupport::TestCase
       assert_equal criterion.assignment, @assignment
     end
 
-    should "create a new instance from a 3 elements row" do
+    should 'create a new instance from a 3 elements row' do
       criterion = FlexibleCriterion.new_from_csv_row(['name',
                                                       10.0,
                                                       'description'],
@@ -115,7 +121,7 @@ class FlexibleCriterionTest < ActiveSupport::TestCase
       assert_equal criterion.assignment, @assignment
     end
 
-    should "report errors on a invalid CSV file" do
+    should 'report errors on a invalid CSV file' do
       tempfile = Tempfile.new('inv_flexible_criteria_csv')
       tempfile << INVALID_CSV_STRING
       tempfile.rewind
@@ -129,7 +135,7 @@ class FlexibleCriterionTest < ActiveSupport::TestCase
       assert_equal 1, invalid_lines.length
     end
 
-    context "with three flexible criteria" do
+    context 'with three flexible criteria' do
       setup do
         FlexibleCriterion.make(:assignment => @assignment,
                               :flexible_criterion_name => 'criterion1',
@@ -147,12 +153,13 @@ class FlexibleCriterionTest < ActiveSupport::TestCase
                               :position => 3)
       end
 
-      should "be able to get a csv string" do
+      should 'be able to get a csv string' do
         csv_string = FlexibleCriterion.create_csv(@assignment)
-        assert_equal CSV_STRING, csv_string, "the CSV string was not the one expected!"
+        assert_equal CSV_STRING, csv_string,
+                     'the CSV string was not the one expected!'
       end
 
-      should "be able to use a generated string for parsing" do
+      should 'be able to use a generated string for parsing' do
         csv_string = FlexibleCriterion.create_csv(@assignment)
         tempfile = Tempfile.new('flexible_csv')
         tempfile << csv_string
@@ -166,11 +173,11 @@ class FlexibleCriterionTest < ActiveSupport::TestCase
         assert_equal 0, invalid_lines.size
       end
 
-      should "fail with corresponding error message if the name is already in use" do
-        e = assert_raise CSV::IllegalFormatError do
+      should 'fail with corresponding error message if the name is already in use' do
+        e = assert_raise CSV::MalformedCSVError do
           FlexibleCriterion.new_from_csv_row(
-                    ['criterion1', 1.0, 'any description would do'],
-                    @assignment)
+            ['criterion1', 1.0, 'any description would do'],
+            @assignment)
         end
         assert_equal I18n.t('criteria_csv_error.name_not_unique'), e.message
       end

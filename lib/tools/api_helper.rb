@@ -59,9 +59,9 @@ def help
   return message
 end
 
-def load_params()
+def load_params
   # By default, non verbose output
-  params = {:verbose => false}
+  params = {verbose: false}
 
   OPTS.each do |opt, arg|
     case opt
@@ -187,7 +187,7 @@ def submit_request(params, uri, param_data)
 def parse_parameters(params)
   param_array = []
   # Read File Content argument from a file
-  if params.has_key?( :test_file ) 
+  if params.has_key?( :test_file )
     if File.readable?(params[:test_file].strip)
       test_file = File.new(params[:test_file].strip, "r")
       content = test_file.read.strip

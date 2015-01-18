@@ -1,9 +1,6 @@
 class TestFile < ActiveRecord::Base
   belongs_to :assignment
 
-  # Restrict updates to filename, filetype and is_private columns
-  attr_accessible :filename, :filetype, :is_private
-
   # Run sanitize_filename before saving to the database
   before_save :sanitize_filename
 
@@ -36,23 +33,23 @@ class TestFile < ActiveRecord::Base
     # Case 1: test, lib and parse type files cannot be called 'build.xml' or 'build.properties'
     # (need to check this in case the user uploads test, lib or parse files before uploading ant files
     #  in which case the build.xml and build.properties will not exist yet)
-    if (f_type != "build.xml" && f_type != "build.properties") && (f_name == "build.xml" || f_name == "build.properties")
-      record.errors.add(:base, I18n.t("automated_tests.invalid_filename"))
+    if (f_type != 'build.xml' && f_type != 'build.properties') && (f_name == 'build.xml' || f_name == 'build.properties')
+      record.errors.add(:base, I18n.t('automated_tests.invalid_filename'))
     end
 
     # Case 2: build.xml and build.properties must be named correctly
-    if f_type == "build.xml" && f_name != "build.xml"
-      record.errors.add(:base, I18n.t("automated_tests.invalid_buildxml"))
-    elsif f_type == "build.properties" && f_name != "build.properties"
-      record.errors.add(:base, I18n.t("automated_tests.invalid_buildproperties"))
+    if f_type == 'build.xml' && f_name != 'build.xml'
+      record.errors.add(:base, I18n.t('automated_tests.invalid_buildxml'))
+    elsif f_type == 'build.properties' && f_name != 'build.properties'
+      record.errors.add(:base, I18n.t('automated_tests.invalid_buildproperties'))
     end
 
     # Case 3: validates_uniqueness_of filename for this assignment
     # (overriden since we need to extract the actual filename using .original_filename)
     if f_name && a_id
-      dup_file = TestFile.find_by_assignment_id_and_filename(a_id, f_name)
+      dup_file = TestFile.where(assignment_id: a_id, filename: f_name).first
       if dup_file && dup_file.id != t_id
-        record.errors.add attr, ' ' + f_name + ' ' + I18n.t("automated_tests.filename_exists")
+        record.errors.add attr, ' ' + f_name + ' ' + I18n.t('automated_tests.filename_exists')
       end
     end
   end
@@ -60,17 +57,17 @@ class TestFile < ActiveRecord::Base
   # Save the full test file path and sanitize the filename for the database
   def sanitize_filename
     # Execute only when full file path exists (indicating a new File object)
-    if self.filename.respond_to?(:original_filename)
-      @file_path = self.filename
-      self.filename = self.filename.original_filename
+    if filename.respond_to?(:original_filename)
+      @file_path = filename
+      filename = filename.original_filename
 
       # Sanitize filename:
-      self.filename.strip!
-      self.filename.gsub(/^(..)+/, ".")
+      filename.strip!
+      filename.gsub!(/^(..)+/, '.')
       # replace spaces with
-      self.filename.gsub(/[^\s]/, "")
+      filename.gsub!(/[^\s]/, '')
       # replace all non alphanumeric, underscore or periods with underscore
-      self.filename.gsub(/^[\W]+$/, '_')
+      filename.gsub!(/^[\W]+$/, '_')
     end
   end
 
@@ -82,7 +79,7 @@ class TestFile < ActiveRecord::Base
       # If the filenames are different, delete the old file
       if self.filename != self.filename_was
         # Search for old file
-        @testfile = TestFile.find_by_id(self.id)
+        @testfile = TestFile.where(id: id).first
         # Delete old file
         @testfile.delete_file
       end
@@ -98,13 +95,13 @@ class TestFile < ActiveRecord::Base
 
       # Folders for test, lib and parse files:
       # Test Files Folder
-      if self.filetype == "test"
+      if self.filetype == 'test'
         test_dir = File.join(test_dir, 'test')
       # Lib Files Folder
-      elsif self.filetype == "lib"
+      elsif self.filetype == 'lib'
         test_dir = File.join(test_dir, 'lib')
       # Parser Files Folder
-      elsif self.filetype == "parse"
+      elsif self.filetype == 'parse'
         test_dir = File.join(test_dir, 'parse')
       end
 
@@ -115,18 +112,18 @@ class TestFile < ActiveRecord::Base
       FileUtils.makedirs(test_dir)
 
       # Read and write the file (overwrite if it exists)
-      File.open(path, "w+") { |f| f.write(@file_path.read) }
+      File.open(path, 'w+') { |f| f.write(@file_path.read) }
     end
   end
 
   def delete_file
     # Test Framework repository to delete from
     test_dir = File.join(MarkusConfigurator.markus_config_automated_tests_repository, assignment.short_identifier)
-    if self.filetype == "test"
+    if self.filetype == 'test'
       test_dir = File.join(test_dir, 'test')
-    elsif self.filetype == "lib"
+    elsif self.filetype == 'lib'
       test_dir = File.join(test_dir, 'lib')
-    elsif self.filetype == "parse"
+    elsif self.filetype == 'parse'
       test_dir = File.join(test_dir, 'parse')
     end
 

@@ -1,34 +1,63 @@
-<script type="text/javascript">
+<script>
 //<![CDATA[
+  function add_annotation_prompt(path) {
+    var annotation_text = jQuery('#add_annotation_text #annotation_text_content');
 
-   var modalUpload = null;
-   var modalDownload = null;
+    if (annotation_text.size()) {
+      annotation_text.select();
+      annotation_text.focus();
+    } else {
+      jQuery.ajax({
+        url:  path,
+        type: 'GET'
+      });
+    }
+  }
 
-   function upload_annotation_categories(){
-     modalUpload.open();
-     return false;
-   }
+  function add_annotation_category(path) {
+    var category_prompt = jQuery('#add_annotation_category_prompt');
 
-   function download_annotation_categories(){
-      modalDownload.open();
-      return false;
-   }
+    if (category_prompt.size()) {
+      category_prompt.select();
+      category_prompt.focus();
+    } else {
+      jQuery.ajax({
+        url:  path,
+        type: 'GET'
+      });
 
-   document.observe("dom:loaded", function(){
-     modalUpload = new Control.Modal($('upload_dialog'),
-     {
-       overlayOpacity: 0.75,
-       className: 'modalUpload',
-       fade: false
-     });
+      var info = jQuery('#no_annotation_categories_info');
+      if (info.size()) {
+        info.hide();
+      }
+    }
+  }
 
-     modalDownload = new Control.Modal($('download_dialog'),
-     {
-       overlayOpacity: 0.75,
-       className: 'modalDownload',
-       fade: false
+  jQuery(document).ready(function() {
+    window.modal_upload   = new ModalMarkus('#upload_dialog');
+    window.modal_download = new ModalMarkus('#download_dialog');
 
-     });
-   });
+    jQuery('.sortable ul').sortable({
+      axis:   'y',
+      cursor: 'move',
+      update: function() {
+        // Cancel any previous requests
+        if (ajaxRequest) {
+          ajaxRequest.abort();
+        }
+
+        ajaxRequest = jQuery.ajax({
+          url:  '<%= update_positions_assignment_annotation_categories_path(@assignment) %>',
+          type: 'POST',
+          data: jQuery('.sortable ul').sortable('serialize'),
+          dataType: 'script',
+          success: function(response) {
+            ajaxRequest = null;
+          }
+        });
+      },
+      cancel: '#add_annotation_category'
+    });
+  });
 //]]>
 </script>

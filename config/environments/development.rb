@@ -1,5 +1,10 @@
+# encoding: utf-8
 # Settings specified here will take precedence over those in config/environment.rb
 Markus::Application.configure do
+
+  # Other Precompiled Assets
+  config.assets.precompile += %w(pdfjs.js)
+
   # In the development environment your application's code is reloaded on
   # every request.  This slows down response time but is perfect for development
   # since you don't have to restart the webserver when you make code changes.
@@ -10,9 +15,11 @@ Markus::Application.configure do
 
   # Show full error reports and disable caching
   config.consider_all_requests_local = true
-  config.action_view.debug_rjs                         = true
-  config.action_controller.perform_caching             = false
-  config.action_controller.allow_forgery_protection    = true
+
+  # FIXME: The following lines can be commented
+  # out when jQuery is fully implemented
+  # config.action_controller.perform_caching             = false
+  # config.action_controller.allow_forgery_protection    = true
 
   # Load any local configuration that is kept out of source control
   if File.exists?(File.join(File.dirname(__FILE__), 'local_environment_override.rb'))
@@ -28,7 +35,9 @@ Markus::Application.configure do
   # Don't care if the mailer can't send
   config.action_mailer.raise_delivery_errors = false
 
-  require 'ruby-debug'
+  # Log the query plan for queries taking more than this (works
+  # with SQLite, MySQL, and PostgreSQL)
+  config.active_record.auto_explain_threshold_in_seconds = 1.0
 
   ###################################################################
   # MarkUs SPECIFIC CONFIGURATION
@@ -119,9 +128,7 @@ Markus::Application.configure do
   ###################################################################
   # Set this to true or false if you want to be able to display and annotate
   # PDF documents within the browser.
-  # When collecting pdfs files, it converts them to jpg format via RGhost.
-  # RGhost is ghostscript dependent. Be sure ghostscript is installed.
-  PDF_SUPPORT = false 
+  PDF_SUPPORT = false
 
   ###################################################################
   # Change this to 'REPOSITORY_EXTERNAL_SUBMITS_ONLY = true' if you
@@ -152,7 +159,7 @@ Markus::Application.configure do
   # Second, if MarkUs is configured with REPOSITORY_EXTERNAL_SUBMITS_ONLY
   # set to 'true', you can configure as to where MarkUs should write the
   # Subversion authz file.
-  REPOSITORY_PERMISSION_FILE = REPOSITORY_STORAGE + "/svn_authz"
+  REPOSITORY_PERMISSION_FILE = REPOSITORY_STORAGE + "/conf"
 
   ###################################################################
   # This setting configures if MarkUs is reading Subversion
@@ -187,6 +194,8 @@ Markus::Application.configure do
   ###################################################################
   # Logging Options
   ###################################################################
+  # If set to true then the MarkusLogger will be enabled
+  MARKUS_LOGGING_ENABLED = true
   # If set to true then the rotation of the logfiles will be defined
   # by MARKUS_LOGGING_ROTATE_INTERVAL instead of the size of the file
   MARKUS_LOGGING_ROTATE_BY_INTERVAL = false

@@ -23,12 +23,13 @@ class AutomatedTestsController < ApplicationController
       Process.detach(child_pid) unless child_pid.nil?
     end
     render :test_replace,
-           :locals => {:test_result_files => @test_result_files,
-                       :result => @result}
+           format: :js,
+           locals: { test_result_files: @test_result_files,
+                     result: @result }
   end
 
 
-  #Update function called when files are added to the assigment
+  #Update function called when files are added to the assignment
 
   def update
       @assignment = Assignment.find(params[:assignment_id])
@@ -39,16 +40,17 @@ class AutomatedTestsController < ApplicationController
           # Process testing framework form for validation
           @assignment = process_test_form(@assignment, params)
         rescue Exception, RuntimeError => e
-          @assignment.errors.add(:base, I18n.t("assignment.error",
-                                               :message => e.message))
-          return
+          @assignment.errors.add(:base, I18n.t('assignment.error',
+            message: e.message))
+          return redirect_to action: 'manage',
+            assignment_id: params[:assignment_id]
         end
 
         # Save assignment and associated test files
         if @assignment.save
-          flash[:success] = I18n.t("assignment.update_success")
-          redirect_to :action => 'manage',
-                      :assignment_id => params[:assignment_id]
+          flash[:success] = I18n.t('assignment.update_success')
+          redirect_to action: 'manage',
+            assignment_id: params[:assignment_id]
         else
           render :manage
         end

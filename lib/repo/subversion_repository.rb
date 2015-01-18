@@ -1,20 +1,20 @@
 require "svn/repos" # load SVN Ruby bindings
 require "svn/client"
-require "md5"
-require 'repo/repository' # load repository module
+require "digest/md5"
+require File.join(File.dirname(__FILE__),'repository') # load repository module
 
 module Repository
 
   # subversion specific module constants
   if !defined? SVN_CONSTANTS # avoid constants already defined warnings
     SVN_CONSTANTS = {
-      :author => Svn::Core::PROP_REVISION_AUTHOR,
-      :date => Svn::Core::PROP_REVISION_DATE,
-      :mime_type => Svn::Core::PROP_MIME_TYPE
+      author: Svn::Core::PROP_REVISION_AUTHOR,
+      date: Svn::Core::PROP_REVISION_DATE,
+      mime_type: Svn::Core::PROP_MIME_TYPE
     }
   end
   if !defined? SVN_FS_TYPES
-    SVN_FS_TYPES = {:fsfs => Svn::Fs::TYPE_FSFS, :bdb => Svn::Fs::TYPE_BDB}
+    SVN_FS_TYPES = {fsfs: Svn::Fs::TYPE_FSFS, bdb: Svn::Fs::TYPE_BDB}
   end
 
   class InvalidSubversionRepository < Repository::ConnectionError; end
@@ -189,7 +189,7 @@ module Repository
         end
         begin
           @repos.fs.root(file.from_revision).file_contents(File.join(file.path, file.name)){|f| f.read}
-        rescue Svn::Error::FS_NOT_FOUND => e
+        rescue Svn::Error::FS_NOT_FOUND
           raise FileDoesNotExistConflict.new(File.join(file.path, file.name))
         end
       }
@@ -236,7 +236,7 @@ module Repository
       else
         return get_revision(get_revision_number_by_timestamp(target_timestamp))
       end
-      
+
     end
 
     # Returns a Repository::TransAction object, to work with. Do operations,
@@ -524,7 +524,7 @@ module Repository
     ####################################################################
 
     # Semi-private class method: Reads in Repository.conf[:REPOSITORY_PERMISSION_FILE]
-    def self.__read_in_authz_file()
+    def self.__read_in_authz_file
       # Check if configuration is in order
       if Repository.conf[:REPOSITORY_PERMISSION_FILE].nil?
         raise ConfigurationError.new("Required config 'REPOSITORY_PERMISSION_FILE' not set")
@@ -676,9 +676,9 @@ module Repository
         begin
           Svn::Repos.history2(@repos.fs, path, history_function, nil, starting_revision || 0,
                               ending_revision || @repos.fs.youngest_rev, true)
-        rescue Svn::Error::FS_NOT_FOUND => e
+        rescue Svn::Error::FS_NOT_FOUND
           raise Repository::FileDoesNotExistConflict.new(path)
-        rescue Svn::Error::FS_NO_SUCH_REVISION => e
+        rescue Svn::Error::FS_NO_SUCH_REVISION
           raise "Ending revision " + ending_revision.to_s + " does not exist."
         end
         revision_numbers.concat hist
@@ -847,7 +847,7 @@ module Repository
     end
 
     # Helper method to check file permissions of svn auth file
-    def svn_auth_file_checks()
+    def svn_auth_file_checks
       if !@repos_admin # if we are not admin, check if files exist
         if !File.file?(@repos_auth_file)
           raise FileDoesNotExist.new("'#{@repos_auth_file}' not a file or not existent")
@@ -949,12 +949,12 @@ module Repository
           last_modified_revision = @repo.__get_history(File.join(path, file_name)).last
           last_modified_date = @repo.__get_node_last_modified_date(File.join(path, file_name), @revision_number)
           new_directory = Repository::RevisionDirectory.new(@revision_number, {
-            :name => file_name,
-            :path => path,
-            :last_modified_revision => last_modified_revision,
-            :last_modified_date => last_modified_date,
-            :changed => (last_modified_revision == @revision_number),
-            :user_id => @repo.__get_property(:author, last_modified_revision)
+            name: file_name,
+            path: path,
+            last_modified_revision: last_modified_revision,
+            last_modified_date: last_modified_date,
+            changed: (last_modified_revision == @revision_number),
+            user_id: @repo.__get_property(:author, last_modified_revision)
           })
           result[file_name] = new_directory
         end
@@ -982,13 +982,13 @@ module Repository
 
           if(!only_changed || (last_modified_revision == @revision_number))
             new_file = Repository::RevisionFile.new(@revision_number, {
-              :name => file_name,
-              :path => path,
-              :last_modified_revision => last_modified_revision,
-              :changed => (last_modified_revision == @revision_number),
-              :user_id => @repo.__get_property(:author, last_modified_revision),
-              :mime_type => @repo.__get_file_property(:mime_type, File.join(path, file_name), last_modified_revision),
-              :last_modified_date => last_modified_date
+              name: file_name,
+              path: path,
+              last_modified_revision: last_modified_revision,
+              changed: (last_modified_revision == @revision_number),
+              user_id: @repo.__get_property(:author, last_modified_revision),
+              mime_type: @repo.__get_file_property(:mime_type, File.join(path, file_name), last_modified_revision),
+              last_modified_date: last_modified_date
             })
             result[file_name] = new_file
           end

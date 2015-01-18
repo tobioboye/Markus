@@ -1,32 +1,36 @@
-require 'iconv'
-require 'fastercsv'
-require 'csv'
+require 'encoding'
 
-class RubricCriterion < ActiveRecord::Base
-  before_save :round_weight
-  after_save :update_existing_results
-  set_table_name "rubric_criteria" # set table name correctly
-  belongs_to :assignment, :counter_cache => true
-  has_many :marks, :as => :markable, :dependent => :destroy
-  has_many :criterion_ta_associations,
-           :as => :criterion,
-           :dependent => :destroy
-  has_many :tas, :through => :criterion_ta_associations
+class RubricCriterion < Criterion
+  self.table_name = 'rubric_criteria' # set table name correctly
 
-  validates_associated  :assignment, :on => :create
-  validates_uniqueness_of :rubric_criterion_name,
-                          :scope => :assignment_id
-  validates_presence_of :rubric_criterion_name
   validates_presence_of :weight
-  validates_presence_of :assignment_id
-  validates_presence_of :assigned_groups_count
-  validates_numericality_of :assignment_id,
-                            :only_integer => true,
-                            :greater_than => 0
   validates_numericality_of :weight
-  validates_numericality_of :assigned_groups_count
-  validate(:validate_total_weight, :on => :update)
+  before_save :round_weight
+  validate :validate_total_weight, on: :update
 
+  after_save :update_existing_results
+
+  has_many :marks, as: :markable, dependent: :destroy
+
+  has_many :criterion_ta_associations,
+           as: :criterion,
+           dependent: :destroy
+
+  has_many :tas, through: :criterion_ta_associations
+
+  belongs_to :assignment, counter_cache: true
+  validates_associated :assignment, on: :create
+  validates_presence_of :assignment_id
+  validates_numericality_of :assignment_id,
+                            only_integer: true,
+                            greater_than: 0
+
+  validates_presence_of :rubric_criterion_name
+  validates_uniqueness_of :rubric_criterion_name,
+                          scope: :assignment_id
+
+  validates_presence_of :assigned_groups_count
+  validates_numericality_of :assigned_groups_count
   before_validation :update_assigned_groups_count
 
   def update_assigned_groups_count
@@ -38,22 +42,27 @@ class RubricCriterion < ActiveRecord::Base
   end
 
   def validate_total_weight
-    errors.add(:assignment, I18n.t("rubric_criteria.error_total")) if self.assignment.total_mark + (4 * (self.weight - self.weight_was)) <= 0
+    errors.add(:assignment, I18n.t('rubric_criteria.error_total')) if self.assignment.total_mark + (4 * (self.weight - self.weight_was)) <= 0
   end
 
   # Just a small effort here to remove magic numbers...
   RUBRIC_LEVELS = 5
   DEFAULT_WEIGHT = 1.0
   DEFAULT_LEVELS = [
-    {'name'=> I18n.t("rubric_criteria.defaults.level_0"), 'description'=> I18n.t("rubric_criteria.defaults.description_0")},
-    {'name'=> I18n.t("rubric_criteria.defaults.level_1"), 'description'=> I18n.t("rubric_criteria.defaults.description_1")},
-    {'name'=> I18n.t("rubric_criteria.defaults.level_2"), 'description'=> I18n.t("rubric_criteria.defaults.description_2")},
-    {'name'=> I18n.t("rubric_criteria.defaults.level_3"), 'description'=> I18n.t("rubric_criteria.defaults.description_3")},
-    {'name'=> I18n.t("rubric_criteria.defaults.level_4"), 'description'=> I18n.t("rubric_criteria.defaults.description_4")}
+    {'name' => I18n.t('rubric_criteria.defaults.level_0'),
+     'description' => I18n.t('rubric_criteria.defaults.description_0')},
+    {'name' => I18n.t('rubric_criteria.defaults.level_1'),
+     'description' => I18n.t('rubric_criteria.defaults.description_1')},
+    {'name' => I18n.t('rubric_criteria.defaults.level_2'),
+     'description' => I18n.t('rubric_criteria.defaults.description_2')},
+    {'name' => I18n.t('rubric_criteria.defaults.level_3'),
+     'description' => I18n.t('rubric_criteria.defaults.description_3')},
+    {'name' => I18n.t('rubric_criteria.defaults.level_4'),
+     'description' => I18n.t('rubric_criteria.defaults.description_4')}
   ]
 
   def mark_for(result_id)
-    return marks.find_by_result_id(result_id)
+    marks.where(result_id: result_id).first
   end
 
   def set_default_levels
@@ -73,7 +82,7 @@ class RubricCriterion < ActiveRecord::Base
   #
   # ===Returns:
   #
-  # Wether the save operation was successful or not.
+  # Whether the save operation was successful or not.
   def set_level_names(levels)
     levels.each_with_index do |level, index|
       self['level_' + index.to_s + '_name'] = level
@@ -87,7 +96,7 @@ class RubricCriterion < ActiveRecord::Base
   #
   # A string. See create_or_update_from_csv_row for format reference.
   def self.create_csv(assignment)
-    csv_string = FasterCSV.generate do |csv|
+    csv_string = CSV.generate do |csv|
       assignment.rubric_criteria.each do |criterion|
         criterion_array = [criterion.rubric_criterion_name,criterion.weight]
         (0..RUBRIC_LEVELS - 1).each do |i|
@@ -99,7 +108,7 @@ class RubricCriterion < ActiveRecord::Base
         csv << criterion_array
       end
     end
-    return csv_string
+    csv_string
   end
 
   # Instantiate a RubricCriterion from a CSV row and attach it to the supplied
@@ -130,8 +139,8 @@ class RubricCriterion < ActiveRecord::Base
     #Check that the weight is not a string.
     begin
       criterion.weight = Float(working_row.shift)
-    rescue ArgumentError => e
-      raise I18n.t('criteria_csv_error.weight_not_number')
+    rescue ArgumentError
+      raise ActiveRecord::RecordNotSaved, I18n.t('criteria_csv_error.weight_not_number')
     end
     # Only set the position if this is a new record.
     if criterion.new_record?
@@ -142,13 +151,13 @@ class RubricCriterion < ActiveRecord::Base
       criterion['level_' + i.to_s + '_name'] = working_row.shift
     end
     # the rest of the values are level descriptions.
-    working_row.each_with_index do |desc, i|
-      criterion['level_' + i.to_s + '_description'] = desc
+    (0..RUBRIC_LEVELS-1).each do |i|
+      criterion['level_' + i.to_s + '_description'] = working_row.shift
     end
-    if !criterion.save
-      raise RuntimeError.new(criterion.errors)
+    unless criterion.save
+      raise ActiveRecord::RecordNotSaved.new(criterion.errors)
     end
-    return criterion
+    criterion
   end
 
   # Instantiate a RubricCriterion from a YML key
@@ -177,12 +186,12 @@ class RubricCriterion < ActiveRecord::Base
     criterion = assignment.rubric_criteria.find_or_create_by_rubric_criterion_name(rubric_criterion_name)
     #Check that the weight is not a string.
     begin
-      criterion.weight = Float(key[1]["weight"])
-    rescue ArgumentError => e
+      criterion.weight = Float(key[1]['weight'])
+    rescue ArgumentError
       raise I18n.t('criteria_csv_error.weight_not_number')
-    rescue TypeError => e
+    rescue TypeError
       raise I18n.t('criteria_csv_error.weight_not_number')
-    rescue NoMethodError => e
+    rescue NoMethodError
       raise I18n.t('rubric_criteria.upload.empty_error')
     end
     # Only set the position if this is a new record.
@@ -191,16 +200,16 @@ class RubricCriterion < ActiveRecord::Base
     end
     # next comes the level names.
     (0..RUBRIC_LEVELS-1).each do |i|
-      if key[1]["level_" + i.to_s]
-        criterion['level_' + i.to_s + '_name'] = key[1]["level_" + i.to_s]["name"]
+      if key[1]['level_' + i.to_s]
+        criterion['level_' + i.to_s + '_name'] = key[1]['level_' + i.to_s]['name']
         criterion['level_' + i.to_s + '_description'] =
-          key[1]["level_" + i.to_s]["description"]
+          key[1]['level_' + i.to_s]['description']
       end
     end
-    if !criterion.save
+    unless criterion.save
       raise RuntimeError.new(criterion.errors)
     end
-    return criterion
+    criterion
   end
 
   # Parse a rubric criteria CSV file.
@@ -221,23 +230,21 @@ class RubricCriterion < ActiveRecord::Base
   # The number of successfully created criteria.
   def self.parse_csv(file, assignment, invalid_lines, encoding)
     nb_updates = 0
-    if encoding != nil
-      file = StringIO.new(Iconv.iconv('UTF-8', encoding, file.read).join)
-    end
-    FasterCSV.parse(file.read) do |row|
-      next if FasterCSV.generate_line(row).strip.empty?
+    file = file.utf8_encode(encoding)
+    CSV.parse(file) do |row|
+      next if CSV.generate_line(row).strip.empty?
       begin
         RubricCriterion.create_or_update_from_csv_row(row, assignment)
         nb_updates += 1
       rescue RuntimeError => e
-        invalid_lines << row.join(',') + ": " + e.message unless invalid_lines.nil?
+        invalid_lines << row.join(',') + ': ' + e.message unless invalid_lines.nil?
       end
     end
-    return nb_updates
+    nb_updates
   end
 
   def get_weight
-    return self.weight
+    self.weight
   end
 
   def round_weight
@@ -250,28 +257,28 @@ class RubricCriterion < ActiveRecord::Base
     tas.each do |ta|
       result = result.concat(ta.get_groupings_by_assignment(assignment))
     end
-    return result.uniq
+    result.uniq
   end
 
   def add_tas(ta_array)
     ta_array = Array(ta_array)
-    associations = criterion_ta_associations.all(:conditions => {:ta_id => ta_array})
+    associations = criterion_ta_associations.all(conditions: {ta_id: ta_array})
     ta_array.each do |ta|
       # & is the mathematical set intersection operator between two arrays
       if (ta.criterion_ta_associations & associations).size < 1
-        criterion_ta_associations.create(:ta => ta, :criterion => self, :assignment => self.assignment)
+        criterion_ta_associations.create(ta: ta, criterion: self, assignment: self.assignment)
       end
     end
   end
 
 
   def get_name
-    return rubric_criterion_name
+    rubric_criterion_name
   end
 
   def remove_tas(ta_array)
     ta_array = Array(ta_array)
-    associations_for_criteria = criterion_ta_associations.all(:conditions => {:ta_id => ta_array})
+    associations_for_criteria = criterion_ta_associations.all(conditions: {ta_id: ta_array})
     ta_array.each do |ta|
       # & is the mathematical set intersection operator between two arrays
       assoc_to_remove = (ta.criterion_ta_associations & associations_for_criteria)
@@ -283,31 +290,32 @@ class RubricCriterion < ActiveRecord::Base
   end
 
   def get_ta_names
-    return criterion_ta_associations.collect {|association| association.ta.user_name}
+    criterion_ta_associations.collect {|association| association.ta.user_name}
   end
 
   def has_associated_ta?(ta)
-    if !ta.ta?
+    unless ta.ta?
       return false
     end
-    return !(criterion_ta_associations.find_by_ta_id(ta.id) == nil)
+    !(criterion_ta_associations.where(ta_id: ta.id).first == nil)
   end
 
   def add_tas_by_user_name_array(ta_user_name_array)
-    result = ta_user_name_array.map{|ta_user_name|
-      Ta.find_by_user_name(ta_user_name)}.compact
+    result = ta_user_name_array.map do |ta_user_name|
+      Ta.where(user_name: ta_user_name).first
+    end.compact
     add_tas(result)
   end
 
   # Returns an array containing the criterion names that didn't exist
   def self.assign_tas_by_csv(csv_file_contents, assignment_id, encoding)
     failures = []
-    if encoding != nil
-      csv_file_contents = StringIO.new(Iconv.iconv('UTF-8', encoding, csv_file_contents.read).join)
-    end
-    FasterCSV.parse(csv_file_contents) do |row|
+    csv_file_contents = csv_file_contents.utf8_encode encoding
+    CSV.parse(csv_file_contents) do |row|
       criterion_name = row.shift # Knocks the first item from array
-      criterion = RubricCriterion.find_by_assignment_id_and_rubric_criterion_name(assignment_id, criterion_name)
+      criterion = RubricCriterion.where(assignment_id: assignment_id,
+                                        rubric_criterion_name: criterion_name)
+                                 .first
       if criterion.nil?
         failures.push(criterion_name)
       else
@@ -319,7 +327,7 @@ class RubricCriterion < ActiveRecord::Base
 
   # Updates results already entered with new criteria
   def update_existing_results
-    self.assignment.submissions.each { |submission| submission.result.update_total_mark }
+    self.assignment.submissions.each { |submission| submission.get_latest_result.update_total_mark }
   end
 
 end
